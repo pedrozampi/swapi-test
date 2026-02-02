@@ -112,7 +112,6 @@ async def get_films(
             response.results = response.results[start_idx:end_idx]
 
         if order_by:
-            # Use getattr to access Pydantic model attributes
             response.results = sorted(response.results, key=lambda x: getattr(x, order_by, ""), reverse=order_direction == "desc")
 
         return response

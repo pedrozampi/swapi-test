@@ -14,6 +14,7 @@ API REST desenvolvida em FastAPI que integra com a [SWAPI (Star Wars API)](https
 - [Endpoints da API](#endpoints-da-api)
 - [Autenticação](#autenticação)
 - [Docker](#docker)
+- [Deploy em Produção](#deploy-em-produção)
 - [Testes](#testes)
 - [Estrutura do Projeto](#estrutura-do-projeto)
 - [Contribuindo](#contribuindo)
@@ -105,7 +106,13 @@ A API estará disponível em `http://localhost:8080`
 
 ## ⚙️ Configuração
 
-Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
+Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis. Você pode usar o arquivo `env.example` como referência:
+
+```bash
+cp env.example .env
+```
+
+Depois, edite o arquivo `.env` com suas credenciais:
 
 ```env
 BASE_URL=https://swapi.dev/api/
@@ -121,7 +128,10 @@ MONGO_PORT=27017
 REDIS_URL=redis://localhost:6379
 ```
 
-**Nota**: Se `MONGO_URI` não for fornecido, a aplicação construirá automaticamente a URI usando as outras variáveis do MongoDB.
+**⚠️ Importante**: 
+- Nunca commite o arquivo `.env` no repositório (já está no `.gitignore`)
+- Para produção (Cloud Run), configure as variáveis de ambiente diretamente no serviço
+- Se `MONGO_URI` não for fornecido, a aplicação construirá automaticamente a URI usando as outras variáveis do MongoDB
 
 ## 📖 Uso
 
@@ -264,6 +274,45 @@ O Docker Compose inicia automaticamente:
 - **MongoDB** na porta 27017
 - **Redis** na porta 6379
 
+## ☁️ Deploy em Produção
+
+A aplicação está hospedada em produção utilizando os seguintes serviços em nuvem:
+
+### Infraestrutura
+
+- **API**: Hospedada no [Google Cloud Run](https://cloud.google.com/run)
+  - Serviço serverless totalmente gerenciado
+  - Escalabilidade automática baseada em demanda
+  - Deploy contínuo via container Docker
+  
+- **Banco de Dados**: [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+  - Cluster gerenciado na nuvem
+  - Alta disponibilidade e backup automático
+  - Gerenciado via MongoDB Compass
+
+- **Cache**: [Redis Cloud](https://redis.io/)
+  - Instância gerenciada de Redis
+  - Alta performance para operações de cache
+  - Persistência de dados configurada
+
+### Vantagens da Arquitetura em Nuvem
+
+- **Escalabilidade**: A API escala automaticamente conforme a demanda
+- **Alta Disponibilidade**: Serviços gerenciados garantem uptime elevado
+- **Manutenção Simplificada**: Infraestrutura gerenciada reduz overhead operacional
+- **Performance**: Cache Redis otimiza tempo de resposta
+- **Segurança**: Serviços em nuvem oferecem recursos de segurança avançados
+
+### Acessando a API em Produção
+
+A API em produção está disponível através da URL do Cloud Run. Para acessar:
+
+1. Use a URL fornecida pelo Google Cloud Run
+2. A documentação interativa (Swagger) está disponível em `/docs`
+3. Todos os endpoints funcionam da mesma forma que na versão local
+
+**Nota**: As credenciais de produção são configuradas através de variáveis de ambiente no Cloud Run, garantindo segurança e flexibilidade.
+
 ## 🧪 Testes
 
 Execute os testes com pytest:
@@ -320,7 +369,7 @@ Este projeto foi desenvolvido para fins de demonstração técnica.
 
 ## 👤 Autor
 
-Desenvolvido como projeto técnico.
+[Pedro Jorge Zampieri Silva](https://github.com/pedrozampi/)
 
 ---
 
