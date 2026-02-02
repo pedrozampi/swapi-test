@@ -1,10 +1,12 @@
-fastapi
+fastapi[standard]
 uvicorn[standard]
 pydantic
 pydantic-settings
 python-jose[cryptography]
+python-multipart
 bcrypt
 pymongo
 httpx
 redis>=5.0.0
 setuptools
+functions_framework

@@ -1,12 +1,13 @@
 from redis import asyncio as redis
+from config import settings
 
 redis_client = None
 
 async def get_redis():
-    """Get or create Redis connection"""
     global redis_client
     if redis_client is None:
-        redis_client = await redis.from_url("redis://localhost:6379", decode_responses=True)
+        redis_url = settings.REDIS_URL
+        redis_client = await redis.from_url(redis_url, decode_responses=True)
     return redis_client
 
 async def get_cache(key: str):
