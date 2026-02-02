@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import auth, films, people, planets, species, starships, vehicles, favorites
+from routers import auth, films, people, planets, species, starships, vehicles, favorites, comments
 
 app = FastAPI(
     title="Star Wars API",
@@ -16,3 +16,4 @@ app.include_router(species.router)
 app.include_router(starships.router)
 app.include_router(vehicles.router)
 app.include_router(favorites.router)
+app.include_router(comments.router)

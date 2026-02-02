@@ -89,7 +89,7 @@ async def validate_details(homeworld: bool, films: bool, people: bool, species_d
         await get_detailed_data("people", species_data, client)
 
 @router.get("/species", tags=["species"], description="Get all species or search by name", summary="Get all species")
-async def get_species(search: str = None, homeworld: bool = False, films: bool = False, people: bool = False, n: int = 10, page: int = 1) -> search_species:
+async def get_species(search: str = None, homeworld: bool = False, films: bool = False, people: bool = False, n: int = 10, page: int = 1, order_by: str = "name", order_direction: str = "asc") -> search_species:
     if search:
         url = f"{BASE_URL}?search={search}"
     else:
@@ -103,6 +103,8 @@ async def get_species(search: str = None, homeworld: bool = False, films: bool =
             start_idx = (page - 1) * n
             end_idx = page * n
             response.results = response.results[start_idx:end_idx]
+        if order_by:
+            response.results = sorted(response.results, key=lambda x: getattr(x, order_by, ""), reverse=order_direction == "desc")
         return response
 
 @router.get("/species/{species_id}", tags=["species"], description="Get a species by ID", summary="Get a species by ID")

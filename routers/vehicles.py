@@ -75,7 +75,7 @@ async def validate_details(films: bool, pilots: bool, vehicles_data: dict, clien
         await get_detailed_data("pilots", vehicles_data, client)
 
 @router.get("/vehicles", tags=["vehicles"], description="Get all vehicles or search by name or model", summary="Get all vehicles")
-async def get_vehicles(search: str = None, films: bool = False, pilots: bool = False, n: int = 10, page: int = 1) -> search_vehicles:
+async def get_vehicles(search: str = None, films: bool = False, pilots: bool = False, n: int = 10, page: int = 1, order_by: str = "name", order_direction: str = "asc") -> search_vehicles:
     if search:
         url = f"{BASE_URL}?search={search}"
     else:
@@ -89,6 +89,8 @@ async def get_vehicles(search: str = None, films: bool = False, pilots: bool = F
             start_idx = (page - 1) * n
             end_idx = page * n
             response.results = response.results[start_idx:end_idx]
+        if order_by:
+            response.results = sorted(response.results, key=lambda x: getattr(x, order_by, ""), reverse=order_direction == "desc")
         return response
 
 @router.get("/vehicles/{vehicle_id}", tags=["vehicles"], description="Get a vehicle by ID", summary="Get a vehicle by ID")

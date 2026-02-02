@@ -100,7 +100,7 @@ async def validate_details(films: bool, species: bool, starships: bool, vehicles
         await get_detailed_data("homeworld", data, client)
 
 @router.get("/people", tags=["people"], description="Get all people or search by name", summary="Get all people")
-async def get_people(search: str = None, films: bool = False, species: bool = False, starships: bool = False, vehicles: bool = False, homeworld: bool = False, n: int = 10, page: int = 1) -> search_people:
+async def get_people(search: str = None, films: bool = False, species: bool = False, starships: bool = False, vehicles: bool = False, homeworld: bool = False, n: int = 10, page: int = 1, order_by: str = "name", order_direction: str = "asc") -> search_people:
     if search:
         url = f"{BASE_URL}?search={search}"
     else:
@@ -114,6 +114,9 @@ async def get_people(search: str = None, films: bool = False, species: bool = Fa
             start_idx = (page - 1) * n
             end_idx = page * n
             response.results = response.results[start_idx:end_idx]
+
+        if order_by:
+            response.results = sorted(response.results, key=lambda x: getattr(x, order_by, ""), reverse=order_direction == "desc")
         return response
 
 @router.get("/people/{person_id}", tags=["people"], description="Get a person by ID", summary="Get a person by ID")

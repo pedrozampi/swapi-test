@@ -91,7 +91,9 @@ async def get_films(
         vehicles: bool = False, 
         planets: bool = False,
         n: int = 10,
-        page: int = 1
+        page: int = 1,
+        order_by: str = "title",
+        order_direction: str = "asc"
     ) -> search_films:
     if search:
         url = f"{BASE_URL}?search={search}"
@@ -108,6 +110,10 @@ async def get_films(
             start_idx = (page - 1) * n
             end_idx = page * n
             response.results = response.results[start_idx:end_idx]
+
+        if order_by:
+            # Use getattr to access Pydantic model attributes
+            response.results = sorted(response.results, key=lambda x: getattr(x, order_by, ""), reverse=order_direction == "desc")
 
         return response
 

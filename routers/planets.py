@@ -73,7 +73,7 @@ async def validate_details(residents: bool, films: bool, planets_data: dict, cli
         await get_detailed_data("films", planets_data, client)
 
 @router.get("/planets", tags=["planets"], description="Get all planets or search by name", summary="Get all planets")
-async def get_planets(search: str = None, residents: bool = False, films: bool = False, n: int = 10, page: int = 1) -> search_planets:
+async def get_planets(search: str = None, residents: bool = False, films: bool = False, n: int = 10, page: int = 1, order_by: str = "name", order_direction: str = "asc") -> search_planets:
     if search:
         url = f"{BASE_URL}?search={search}"
     else:
@@ -87,6 +87,8 @@ async def get_planets(search: str = None, residents: bool = False, films: bool =
             start_idx = (page - 1) * n
             end_idx = page * n
             response.results = response.results[start_idx:end_idx]
+        if order_by:
+            response.results = sorted(response.results, key=lambda x: getattr(x, order_by, ""), reverse=order_direction == "desc")
         return response
 
 @router.get("/planets/{planet_id}", tags=["planets"])

@@ -75,7 +75,7 @@ async def validate_details(films: bool, pilots: bool, starships_data: dict, clie
         await get_detailed_data("pilots", starships_data, client)
 
 @router.get("/starships", tags=["starships"], description="Get all starships or search by name or model", summary="Get all starships")
-async def get_starships(search: str = None, films: bool = False, pilots: bool = False, n: int = 10, page: int = 1) -> search_starships:
+async def get_starships(search: str = None, films: bool = False, pilots: bool = False, n: int = 10, page: int = 1, order_by: str = "name", order_direction: str = "asc") -> search_starships:
     if search:
         url = f"{BASE_URL}?search={search}"
     else:
@@ -89,6 +89,8 @@ async def get_starships(search: str = None, films: bool = False, pilots: bool = 
             start_idx = (page - 1) * n
             end_idx = page * n
             response.results = response.results[start_idx:end_idx]
+        if order_by:
+            response.results = sorted(response.results, key=lambda x: getattr(x, order_by, ""), reverse=order_direction == "desc")
         return response
 
 @router.get("/starships/{starship_id}", tags=["starships"], description="Get a starship by ID", summary="Get a starship by ID")
