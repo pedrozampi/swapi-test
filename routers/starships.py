@@ -3,6 +3,8 @@ from config import settings
 from pydantic import BaseModel, Field
 from typing import Optional, Union
 import httpx
+import json
+from cache import get_cache, set_cache, delete_cache
 
 router = APIRouter()
 
@@ -50,11 +52,18 @@ async def get_detailed_data(data: str, starships_data: dict, client: httpx.Async
         for url in urls:
             try:
                 data_id = int(url.rstrip('/').split('/')[-1])
-                data_resp = await client.get(f"{settings.BASE_URL}{field_name}/{data_id}")
-                if data_resp.status_code == 200:
-                    detailed_data.append(data_resp.json())
+                cache_key = f"{field_name}/{data_id}"
+                cached_data = await get_cache(cache_key)
+                if cached_data:
+                    detailed_data.append(json.loads(cached_data))
                 else:
-                    detailed_data.append(url)
+                    data_resp = await client.get(f"{settings.BASE_URL}{field_name}/{data_id}")
+                    if data_resp.status_code == 200:
+                        response_data = data_resp.json()
+                        detailed_data.append(response_data)
+                        await set_cache(cache_key, json.dumps(response_data), 60 * 60 * 24)
+                    else:
+                        detailed_data.append(url)
             except Exception:
                 detailed_data.append(url)
         starship_item[data] = detailed_data

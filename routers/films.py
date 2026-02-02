@@ -4,13 +4,15 @@ from typing import Optional, Union
 from config import settings
 import httpx
 import logging
+import json
 
 logger = logging.getLogger(__name__)
-
 logging.basicConfig(level=logging.INFO)
 router = APIRouter()
 
 BASE_URL = settings.BASE_URL + "films"
+
+from cache import get_cache, set_cache, delete_cache
 
 class film(BaseModel):
     title: str = Field(default=None)
@@ -36,23 +38,37 @@ class search_films(BaseModel):
     results: Optional[list[film]] = None
 
 async def get_detailed_data(data: str, films_data: dict, client: httpx.AsyncClient) -> dict:
-        results = films_data.get("results", [])
-        for film_item in results:
-            urls = film_item.get(data, [])
-            detailed_species = []
-            for url in urls:
-                try:
-                    species_id = int(url.rstrip('/').split('/')[-1])
-                    species_resp = await client.get(f"{settings.BASE_URL}{data}/{species_id}")
-                    if species_resp.status_code == 200:
-                        detailed_species.append(species_resp.json())
+    if "results" in films_data:
+        items = films_data["results"]
+    else:
+        items = [films_data]
+    for film_item in items:
+        urls = film_item.get(data, [])
+        detailed_data = []
+        for url in urls:
+            try:
+                data_id = int(url.rstrip('/').split('/')[-1])
+                cache_key = f"{data}/{data_id}"
+                cached_data = await get_cache(cache_key)
+                logger.info(f"Cached data: {cached_data}")
+                if cached_data:
+                    detailed_data.append(json.loads(cached_data))
+                else:
+                    data_resp = await client.get(f"{settings.BASE_URL}{data}/{data_id}")
+                    logger.info(f"Data response: {data_resp.json()}")
+                    if data_resp.status_code == 200:
+                        response_data = data_resp.json()
+                        detailed_data.append(response_data)
+                        await set_cache(cache_key, json.dumps(response_data), 60 * 60 * 24)
                     else:
-                        detailed_species.append(url)
-                except Exception:
-                    detailed_species.append(url)
-            film_item[data] = detailed_species
+                        detailed_data.append(url)
+            except Exception as e:
+                logger.error(f"Error processing {data} for URL {url}: {e}")
+                detailed_data.append(url)
+        film_item[data] = detailed_data
 
 async def validate_details(species: bool, people: bool, starships: bool, vehicles: bool, planets: bool, data: dict, client: httpx.AsyncClient) -> bool:
+    logger.info("Validating details")
     if species:
         await get_detailed_data("species", data, client)
     if people:

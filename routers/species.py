@@ -3,6 +3,8 @@ from config import settings
 from pydantic import BaseModel, Field
 from typing import Optional, Union
 import httpx
+import json
+from cache import get_cache, set_cache, delete_cache
 
 router = APIRouter()
 
@@ -45,9 +47,17 @@ async def get_detailed_data(data: str, species_data: dict, client: httpx.AsyncCl
             if url:
                 try:
                     planet_id = int(url.rstrip('/').split('/')[-1])
-                    planet_resp = await client.get(f"{settings.BASE_URL}planets/{planet_id}")
-                    if planet_resp.status_code == 200:
-                        species_item[field_name] = planet_resp.json()
+                    cache_key = f"planets/{planet_id}"
+                    cached_data = await get_cache(cache_key)
+                    if cached_data:
+                        species_item[field_name] = json.loads(cached_data)
+                    else:
+                        planet_resp = await client.get(f"{settings.BASE_URL}planets/{planet_id}")
+                        if planet_resp.status_code == 200:
+                            species_item[field_name] = planet_resp.json()
+                            await set_cache(cache_key, json.dumps(planet_resp.json()), 60 * 60 * 24)
+                        else:
+                            species_item[field_name] = url
                 except Exception:
                     pass
         else:

@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-jose[cryptography]
+bcrypt
+pymongo
+httpx
+redis>=5.0.0
+setuptools

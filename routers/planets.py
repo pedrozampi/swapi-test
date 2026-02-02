@@ -3,6 +3,9 @@ from config import settings
 from pydantic import BaseModel, Field
 from typing import Optional, Union
 import httpx
+import json
+
+from cache import get_cache, set_cache, delete_cache
 
 router = APIRouter()
 
@@ -47,11 +50,18 @@ async def get_detailed_data(data: str, planets_data: dict, client: httpx.AsyncCl
         for url in urls:
             try:
                 data_id = int(url.rstrip('/').split('/')[-1])
-                data_resp = await client.get(f"{settings.BASE_URL}{field_name}/{data_id}")
-                if data_resp.status_code == 200:
-                    detailed_data.append(data_resp.json())
+                cache_key = f"{field_name}/{data_id}"
+                cached_data = await get_cache(cache_key)
+                if cached_data:
+                    detailed_data.append(json.loads(cached_data))
                 else:
-                    detailed_data.append(url)
+                    data_resp = await client.get(f"{settings.BASE_URL}{field_name}/{data_id}")
+                    if data_resp.status_code == 200:
+                        response_data = data_resp.json()
+                        detailed_data.append(response_data)
+                        await set_cache(cache_key, json.dumps(response_data), 60 * 60 * 24)
+                    else:
+                        detailed_data.append(url)
             except Exception:
                 detailed_data.append(url)
         planet_item[data] = detailed_data
@@ -80,7 +90,9 @@ async def get_planets(search: str = None, residents: bool = False, films: bool =
         return response
 
 @router.get("/planets/{planet_id}", tags=["planets"])
-async def get_planet(planet_id: int) -> planet:
+async def get_planet(planet_id: int, residents: bool = False, films: bool = False) -> planet:
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{BASE_URL}/{planet_id}")
-        return planet(**response.json())
+        planets_data = response.json()
+        await validate_details(residents, films, planets_data, client)
+        return planet(**planets_data)

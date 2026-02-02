@@ -3,6 +3,8 @@ from config import settings
 from pydantic import BaseModel, Field
 from typing import Optional, Union
 import httpx
+import json
+from cache import get_cache, set_cache, delete_cache
 
 router = APIRouter()
 

@@ -3,10 +3,13 @@ from config import settings
 from pydantic import BaseModel, Field
 from typing import Optional, Union
 import httpx
+import json
 
 router = APIRouter()
 
 BASE_URL = settings.BASE_URL + "people"
+
+from cache import get_cache, set_cache, delete_cache
 
 class person(BaseModel):
     name: str = Field(default=None)
@@ -39,30 +42,47 @@ async def get_detailed_data(data: str, people_data: dict, client: httpx.AsyncCli
         items = [people_data]
     
     for person_item in items:
-        if data == "planets":
-            field_name = "homeworld"
-            url = person_item.get(field_name)
+        if data == "homeworld":
+            field_name = "planets"
+            url = person_item.get(data)
             if url:
                 try:
                     planet_id = int(url.rstrip('/').split('/')[-1])
-                    planet_resp = await client.get(f"{settings.BASE_URL}planets/{planet_id}")
-                    if planet_resp.status_code == 200:
-                        person_item[field_name] = planet_resp.json()
+                    cache_key = f"{field_name}/{planet_id}"
+                    cached_data = await get_cache(cache_key)
+                    if cached_data:
+                        person_item[data] = json.loads(cached_data)
+                    else:
+                        planet_resp = await client.get(f"{settings.BASE_URL}{field_name}/{planet_id}")
+                        if planet_resp.status_code == 200:
+                            planet_data = planet_resp.json()
+                            person_item[data] = planet_data
+                            await set_cache(cache_key, json.dumps(planet_data), 60 * 60 * 24)
                 except Exception:
-                    pass
+                    pass 
         else:
+            field_name = data
             urls = person_item.get(data, [])
-            if isinstance(urls, str):
+            if urls is None:
+                urls = []
+            elif isinstance(urls, str):
                 urls = [urls]
             detailed_data = []
             for url in urls:
                 try:
                     data_id = int(url.rstrip('/').split('/')[-1])
-                    data_resp = await client.get(f"{settings.BASE_URL}{data}/{data_id}")
-                    if data_resp.status_code == 200:
-                        detailed_data.append(data_resp.json())
+                    cache_key = f"{field_name}/{data_id}"
+                    cached_data = await get_cache(cache_key)
+                    if cached_data:
+                        detailed_data.append(json.loads(cached_data))
                     else:
-                        detailed_data.append(url)
+                        data_resp = await client.get(f"{settings.BASE_URL}{field_name}/{data_id}")
+                        if data_resp.status_code == 200:
+                            response_data = data_resp.json()
+                            detailed_data.append(response_data)
+                            await set_cache(cache_key, json.dumps(response_data), 60 * 60 * 24)
+                        else:
+                            detailed_data.append(url)
                 except Exception:
                     detailed_data.append(url)
             person_item[data] = detailed_data
@@ -77,7 +97,7 @@ async def validate_details(films: bool, species: bool, starships: bool, vehicles
     if vehicles:
         await get_detailed_data("vehicles", data, client)
     if homeworld:
-        await get_detailed_data("planets", data, client)
+        await get_detailed_data("homeworld", data, client)
 
 @router.get("/people", tags=["people"], description="Get all people or search by name", summary="Get all people")
 async def get_people(search: str = None, films: bool = False, species: bool = False, starships: bool = False, vehicles: bool = False, homeworld: bool = False, n: int = 10, page: int = 1) -> search_people:
@@ -101,5 +121,5 @@ async def get_person(person_id: int, films: bool = False, species: bool = False,
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{BASE_URL}/{person_id}")
         person_data = response.json()
-        await validate_details(films, species, starships, vehicles, homeworld, person_data, client)
+        await validate_details(films, species, starships, vehicles, homeworld, {"results": [person_data]}, client)
         return person(**person_data)
