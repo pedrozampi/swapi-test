@@ -6,7 +6,7 @@ services:
     container_name: starwars-app
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
       - BASE_URL=${BASE_URL:-https://swapi.dev/api/}
       - SECRET_KEY=${SECRET_KEY}
@@ -24,7 +24,7 @@ services:
       - starwars-network
     volumes:
       - .:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 
   mongodb:
     image: mongo:7
