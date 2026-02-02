@@ -54,3 +54,9 @@ async def add_favorite(item_id: str, type: str, current_user: dict = Depends(get
         raise HTTPException(status_code=400, detail="Favorite already exists")
     favorites_collection.insert_one({"user_id": user_id, "type": type, "item_id": item_id})
     return {"message": "Favorite added successfully"}
+
+@router.delete("/favorites/{type}", tags=["favorites"], description="Delete a favorite", summary="Delete a favorite")
+async def delete_favorite(item_id: str, type: str, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    favorites_collection.delete_one({"user_id": user_id, "type": type, "item_id": item_id})
+    return {"message": "Favorite deleted successfully"}
