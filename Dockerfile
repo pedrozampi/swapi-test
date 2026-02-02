@@ -10,10 +10,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     ACCESS_TOKEN_EXPIRE_MINUTES=30 \
     MONGO_DB=starwars \
     MONGO_USERNAME=admin \
-    MONGO_PASSWORD=admin123 \
-    MONGO_HOST=mongodb \
+    MONGO_PASSWORD=NEKncn92728 \
+    MONGO_HOST=node257373-swapi.sp1.br.saveincloud.net.br \
     MONGO_PORT=27017 \
-    REDIS_URL=redis://redis:6379
+    MONGO_URI=mongodb+srv://PedroZ:pwd123pwd@cluster0.rwdhmgd.mongodb.net/starwars?authSource=admin \
+    REDIS_URL=redis://default:xxtrdLmkp9QQGOoEL5t5ES48Xc1Jnaow@redis-16744.c336.samerica-east1-1.gce.cloud.redislabs.com:16744
 
 RUN apt-get update && apt-get install -y \
     gcc \

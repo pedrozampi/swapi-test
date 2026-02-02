@@ -26,7 +26,8 @@ async def register(username: str, password: str):
     user = users_collection.find_one({"username": username})
     if user:
         raise HTTPException(status_code=400, detail="User already exists")
-    users_collection.insert_one({"username": username, "hashed_password": hashed_password})
+    result = users_collection.insert_one({"username": username, "hashed_password": hashed_password})
+
     return {"message": "User registered successfully"}
 
 @router.post("/token")
@@ -34,14 +35,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = users_collection.find_one({"username": form_data.username})
     if not user or not verify_password(form_data.password, user["hashed_password"]):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    logger.info(user)
     access_token = create_access_token(data={"sub": user["username"], "id": str(user["_id"])})
     return {"access_token": access_token, "token_type": "bearer"}
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        logger.info(payload)
         username: str = payload.get("sub")
         user_id: str = payload.get("id")
         if username is None:
